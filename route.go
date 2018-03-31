@@ -18,7 +18,7 @@ type Route struct {
 	Description string
 	Method      string
 	Path        string
-	f           func() (interface{}, error)
+	F           func(*Request) (interface{}, error)
 }
 
 type Routes []Route
@@ -37,15 +37,15 @@ type Router struct {
 	muxRouter *mux.Router
 }
 
-func (this *Router) Start(port string) {
-	http.ListenAndServe(port, this.muxRouter)
+func (this *Router) Start(port string) error {
+	return http.ListenAndServe(port, this.muxRouter)
 }
 
 func NewRouter(routes Routes) *Router {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		var handler http.Handler
-		handler = NewHandlerFunc(route.f)
+		handler = NewHandlerFunc(route.F)
 		//handler = Logger(handler, route.Name) Use this method of 'logging' later for user authentication
 		router.
 			Methods(route.Method).
@@ -58,9 +58,10 @@ func NewRouter(routes Routes) *Router {
 	}
 }
 
-func NewHandlerFunc(f func() (interface{}, error)) http.HandlerFunc {
+func NewHandlerFunc(f func(r *Request) (interface{}, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, err := f()
+		req := NewRequest(r)
+		result, err := f(req)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.WriteHeader(http.StatusInternalServerError)
