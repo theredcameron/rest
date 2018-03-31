@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -28,7 +29,7 @@ type DataWrapper struct {
 }
 
 type ErrorWrapper struct {
-	Error error `json:"error"`
+	Error string `json:"error"`
 }
 
 type InternalRoutes []InternalRoute
@@ -60,25 +61,32 @@ func NewRouter(routes Routes) *Router {
 
 func NewHandlerFunc(f func(r *Request) (interface{}, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req := NewRequest(r)
+		req, err := NewRequest(r)
 		result, err := f(req)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			w.WriteHeader(http.StatusInternalServerError)
+			ErrorReturn(err, w)
+			return
 		}
 		data := &DataWrapper{
 			Data: result,
 		}
+
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			ErrorReturn(err, w)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			error_string := &ErrorWrapper{
-				Error: err,
-			}
-			w.WriteHeader(http.StatusInternalServerError)
-			if err := json.NewEncoder(w).Encode(error_string); err != nil {
-				panic(err)
-			}
-		}
+	}
+}
+
+func ErrorReturn(err error, w http.ResponseWriter) {
+	error_string := &ErrorWrapper{
+		Error: fmt.Sprintf("Error: %v", err),
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusInternalServerError)
+	if err := json.NewEncoder(w).Encode(error_string); err != nil {
+		panic(err)
 	}
 }
