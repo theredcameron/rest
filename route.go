@@ -39,7 +39,7 @@ type Router struct {
 }
 
 func (this *Router) Start(port string) error {
-	return http.ListenAndServe(port, this.muxRouter)
+	return http.ListenAndServe(":"+port, this.muxRouter)
 }
 
 func NewRouter(routes Routes) *Router {
@@ -59,9 +59,13 @@ func NewRouter(routes Routes) *Router {
 	}
 }
 
-func NewHandlerFunc(f func(r *Request) (interface{}, error)) http.HandlerFunc {
+func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := NewRequest(r)
+		if err != nil {
+			ErrorReturn(err, w)
+			return
+		}
 		result, err := f(req)
 		if err != nil {
 			ErrorReturn(err, w)
@@ -70,13 +74,12 @@ func NewHandlerFunc(f func(r *Request) (interface{}, error)) http.HandlerFunc {
 		data := &DataWrapper{
 			Data: result,
 		}
-
-		if err := json.NewEncoder(w).Encode(data); err != nil {
-			ErrorReturn(err, w)
-			return
-		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(data); err != nil {
+			panic(err)
+		}
+
 	}
 }
 
