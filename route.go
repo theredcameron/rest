@@ -8,13 +8,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type InternalRoute struct {
-	Description string
-	Method      string
-	Path        string
-	f           http.HandlerFunc
-}
-
 type Route struct {
 	Description string
 	Method      string
@@ -32,8 +25,6 @@ type ErrorWrapper struct {
 	Error string `json:"error"`
 }
 
-type InternalRoutes []InternalRoute
-
 type Router struct {
 	muxRouter *mux.Router
 }
@@ -47,7 +38,6 @@ func NewRouter(routes Routes) *Router {
 	for _, route := range routes {
 		var handler http.Handler
 		handler = NewHandlerFunc(route.F)
-		//handler = Logger(handler, route.Name) Use this method of 'logging' later for user authentication
 		router.
 			Methods(route.Method).
 			Path(route.Path).
