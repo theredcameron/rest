@@ -8,14 +8,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Route struct {
+type Endpoint struct {
 	Description string
 	Method      string
 	Path        string
 	F           func(*Request) (interface{}, error)
 }
 
-type Routes []Route
+type Endpoints []Endpoint
 
 type DataWrapper struct {
 	Data interface{} `json:"data"`
@@ -33,15 +33,15 @@ func (this *Router) Start(port string) error {
 	return http.ListenAndServe(":"+port, this.muxRouter)
 }
 
-func NewRouter(routes Routes) *Router {
+func NewRouter(endpoints Endpoints) *Router {
 	router := mux.NewRouter().StrictSlash(true)
-	for _, route := range routes {
+	for _, endpoint := range endpoints {
 		var handler http.Handler
-		handler = NewHandlerFunc(route.F)
+		handler = NewHandlerFunc(endpoint.F)
 		router.
-			Methods(route.Method).
-			Path(route.Path).
-			Name(route.Description).
+			Methods(endpoint.Method).
+			Path(endpoint.Path).
+			Name(endpoint.Description).
 			Handler(handler)
 	}
 	return &Router{
