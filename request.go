@@ -13,12 +13,6 @@ type Request struct {
 	Vars   map[string]string
 	Body   []byte
 	Params map[string]string
-	Auth   *Authentication
-}
-
-type Authentication struct {
-	Username string
-	Password string
 }
 
 func NewRequest(r *http.Request) (*Request, error) {
@@ -40,20 +34,9 @@ func NewRequest(r *http.Request) (*Request, error) {
 		queries[index] = param
 	}
 
-	var auth *Authentication
-
-	username, password, ok := r.BasicAuth()
-	if ok {
-		auth = &Authentication{
-			Username: username,
-			Password: password,
-		}
-	}
-
 	return &Request{
 		Vars:   mux.Vars(r),
 		Body:   body,
 		Params: queries,
-		Auth: auth,
 	}, nil
 }
