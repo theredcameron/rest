@@ -19,11 +19,11 @@ type Endpoint struct {
 
 type Endpoints []Endpoint
 
-type DataWrapper struct {
+type dataWrapper struct {
 	Data interface{} `json:"data"`
 }
 
-type ErrorWrapper struct {
+type errorWrapper struct {
 	Error string `json:"error"`
 }
 
@@ -33,7 +33,6 @@ type Router struct {
 
 type Auth struct {
 	File   string
-	Table  string
 	Path   string
 	MaxAge int
 	Key    []byte
@@ -72,28 +71,28 @@ func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := NewRequest(r)
 		if err != nil {
-			ErrorReturn(err, w)
+			errorReturn(err, w)
 			return
 		}
 		result, err := f(req)
 		if err != nil {
-			ErrorReturn(err, w)
+			errorReturn(err, w)
 			return
 		}
-		data := &DataWrapper{
+		data := &dataWrapper{
 			Data: result,
 		}
 		var session *sessions.Session
 		if store != nil {
 			session, err = store.Get(r, "authentication")
 			if err != nil {
-				ErrorReturn(err, w)
+				errorReturn(err, w)
 				return
 			}
-			session.Values = req.CookieValues
+			session.Values = req.GetAllCookies()
 			err = session.Save(r, w)
 			if err != nil {
-				ErrorReturn(err, w)
+				errorReturn(err, w)
 				return
 			}
 		}
@@ -106,8 +105,8 @@ func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 	}
 }
 
-func ErrorReturn(err error, w http.ResponseWriter) {
-	error_string := &ErrorWrapper{
+func errorReturn(err error, w http.ResponseWriter) {
+	error_string := &errorWrapper{
 		Error: fmt.Sprintf("Error: %v", err),
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

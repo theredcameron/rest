@@ -14,20 +14,24 @@ type Request struct {
 	Vars         map[string]string
 	Body         []byte
 	Params       map[string]string
-	CookieValues CookieValues
+	cookieValues cookieValues
 }
 
-type CookieValues map[interface{}]interface{}
+type cookieValues map[interface{}]interface{}
 
-func (this *CookieValues) Get(key interface{}) (interface{}, error) {
-	if value, ok := (*this)[key]; ok {
+func (this *Request) GetCookie(key interface{}) (interface{}, error) {
+	if value, ok := this.cookieValues[key]; ok {
 		return value, nil
 	}
 	return nil, fmt.Errorf("entry not found")
 }
 
-func (this *CookieValues) Set(key, value interface{}) {
-	(*this)[key] = value
+func (this *Request) GetAllCookies() cookieValues {
+	return this.cookieValues
+}
+
+func (this *Request) SetCookie(key, value interface{}) {
+	this.cookieValues[key] = value
 }
 
 func NewRequest(r *http.Request) (*Request, error) {
@@ -54,13 +58,13 @@ func NewRequest(r *http.Request) (*Request, error) {
 		return nil, err
 	}
 
-	var cookieVals CookieValues
+	var cookieVals cookieValues
 	cookieVals = session.Values
 
 	return &Request{
 		Vars:         mux.Vars(r),
 		Body:         body,
 		Params:       queries,
-		CookieValues: cookieVals,
+		cookieValues: cookieVals,
 	}, nil
 }
