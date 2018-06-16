@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
+	"github.com/michaeljs1990/sqlitestore"
 )
 
 type Endpoint struct {
@@ -29,11 +31,21 @@ type Router struct {
 	muxRouter *mux.Router
 }
 
+type Auth struct {
+	File   string
+	Table  string
+	Path   string
+	MaxAge int
+	Key    []byte
+}
+
 func (this *Router) Start(port string) error {
 	return http.ListenAndServe(":"+port, this.muxRouter)
 }
 
-func NewRouter(endpoints Endpoints) *Router {
+var store *sqlitestore.SqliteStore
+
+func NewRouter(endpoints Endpoints, auth *Auth) (*Router, error) {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, endpoint := range endpoints {
 		var handler http.Handler
@@ -44,9 +56,16 @@ func NewRouter(endpoints Endpoints) *Router {
 			Name(endpoint.Description).
 			Handler(handler)
 	}
+	if auth != nil {
+		var err error
+		store, err = sqlitestore.NewSqliteStore(auth.File, "sessions", auth.Path, auth.MaxAge, auth.Key)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &Router{
 		muxRouter: router,
-	}
+	}, nil
 }
 
 func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
@@ -63,6 +82,20 @@ func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 		}
 		data := &DataWrapper{
 			Data: result,
+		}
+		var session *sessions.Session
+		if store != nil {
+			session, err = store.Get(r, "authentication")
+			if err != nil {
+				ErrorReturn(err, w)
+				return
+			}
+			session.Values = req.CookieValues
+			err = session.Save(r, w)
+			if err != nil {
+				ErrorReturn(err, w)
+				return
+			}
 		}
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
