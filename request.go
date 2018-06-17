@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,14 +18,14 @@ type Request struct {
 
 type cookieValues map[interface{}]interface{}
 
-func (this *Request) GetCookie(key interface{}) (interface{}, error) {
+func (this *Request) GetCookie(key interface{}) interface{} {
 	if value, ok := this.cookieValues[key]; ok {
-		return value, nil
+		return value
 	}
-	return nil, fmt.Errorf("entry not found")
+	return nil
 }
 
-func (this *Request) GetAllCookies() cookieValues {
+func (this *Request) getAllCookies() cookieValues {
 	return this.cookieValues
 }
 

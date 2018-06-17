@@ -89,7 +89,7 @@ func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 				errorReturn(err, w)
 				return
 			}
-			session.Values = req.GetAllCookies()
+			session.Values = req.getAllCookies()
 			err = session.Save(r, w)
 			if err != nil {
 				errorReturn(err, w)
