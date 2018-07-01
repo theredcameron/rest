@@ -33,7 +33,7 @@ func (this *Request) SetCookie(key, value interface{}) {
 	this.cookieValues[key] = value
 }
 
-func NewRequest(r *http.Request) (*Request, error) {
+func NewRequest(r *http.Request, meta *CookieMeta) (*Request, error) {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 9999999))
 	if err != nil {
 		return nil, err
@@ -52,13 +52,15 @@ func NewRequest(r *http.Request) (*Request, error) {
 		queries[index] = param
 	}
 
-	session, err := store.Get(r, "authentication")
-	if err != nil {
-		return nil, err
-	}
-
 	var cookieVals cookieValues
-	cookieVals = session.Values
+
+	if meta != nil {
+		session, err := store.Get(r, meta.StoreName)
+		if err != nil {
+			return nil, err
+		}
+		cookieVals = session.Values
+	}
 
 	return &Request{
 		Vars:         mux.Vars(r),

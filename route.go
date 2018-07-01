@@ -31,11 +31,12 @@ type Router struct {
 	muxRouter *mux.Router
 }
 
-type Auth struct {
-	File   string
-	Path   string
-	MaxAge int
-	Key    []byte
+type CookieMeta struct {
+	File      string
+	Path      string
+	MaxAge    int
+	Key       []byte
+	StoreName string
 }
 
 func (this *Router) Start(port string) error {
@@ -44,20 +45,20 @@ func (this *Router) Start(port string) error {
 
 var store *sqlitestore.SqliteStore
 
-func NewRouter(endpoints Endpoints, auth *Auth) (*Router, error) {
+func NewRouter(endpoints Endpoints, meta *CookieMeta) (*Router, error) {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, endpoint := range endpoints {
 		var handler http.Handler
-		handler = NewHandlerFunc(endpoint.F)
+		handler = NewHandlerFunc(endpoint.F, meta)
 		router.
 			Methods(endpoint.Method).
 			Path(endpoint.Path).
 			Name(endpoint.Description).
 			Handler(handler)
 	}
-	if auth != nil {
+	if meta != nil {
 		var err error
-		store, err = sqlitestore.NewSqliteStore(auth.File, "sessions", auth.Path, auth.MaxAge, auth.Key)
+		store, err = sqlitestore.NewSqliteStore(meta.File, "sessions", meta.Path, meta.MaxAge, meta.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -67,9 +68,9 @@ func NewRouter(endpoints Endpoints, auth *Auth) (*Router, error) {
 	}, nil
 }
 
-func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
+func NewHandlerFunc(f func(*Request) (interface{}, error), meta *CookieMeta) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		req, err := NewRequest(r)
+		req, err := NewRequest(r, meta)
 		if err != nil {
 			errorReturn(err, w)
 			return
@@ -84,7 +85,7 @@ func NewHandlerFunc(f func(*Request) (interface{}, error)) http.HandlerFunc {
 		}
 		var session *sessions.Session
 		if store != nil {
-			session, err = store.Get(r, "authentication")
+			session, err = store.Get(r, meta.StoreName)
 			if err != nil {
 				errorReturn(err, w)
 				return
