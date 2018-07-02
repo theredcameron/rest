@@ -18,18 +18,18 @@ type Request struct {
 
 type cookieValues map[interface{}]interface{}
 
-func (this *Request) GetCookie(key interface{}) interface{} {
+func (this *Request) GetCookieValue(key interface{}) interface{} {
 	if value, ok := this.cookieValues[key]; ok {
 		return value
 	}
 	return nil
 }
 
-func (this *Request) getAllCookies() cookieValues {
+func (this *Request) getAllCookieValues() cookieValues {
 	return this.cookieValues
 }
 
-func (this *Request) SetCookie(key, value interface{}) {
+func (this *Request) SetCookieValue(key, value interface{}) {
 	this.cookieValues[key] = value
 }
 
