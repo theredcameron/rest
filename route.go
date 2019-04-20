@@ -102,7 +102,6 @@ func NewHandlerFunc(f func(*Request) (interface{}, error), meta *CookieMeta) htt
 		if err := json.NewEncoder(w).Encode(data); err != nil {
 			panic(err)
 		}
-
 	}
 }
 
