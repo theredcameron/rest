@@ -30,6 +30,10 @@ func (this *Request) getAllCookieValues() cookieValues {
 }
 
 func (this *Request) SetCookieValue(key, value interface{}) {
+	if value == nil {
+		delete(this.cookieValues, key)
+		return
+	}
 	this.cookieValues[key] = value
 }
 
