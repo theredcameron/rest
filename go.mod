@@ -1,4 +1,4 @@
-module rest
+module github.com/theredcameron/rest
 
 go 1.12
 
