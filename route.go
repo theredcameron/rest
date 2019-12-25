@@ -46,16 +46,18 @@ func (this *Router) Start(port string) error {
 var store *sqlitestore.SqliteStore
 
 //func NewRouter(endpoints Endpoints, meta *CookieMeta) (*Router, error) {
-func NewRouter(meta *CookieMeta, endpoints ...Endpoint) (*Router, error) {
+func NewRouter(meta *CookieMeta, endpoints ...Endpoints) (*Router, error) {
 	router := mux.NewRouter().StrictSlash(true)
-	for _, endpoint := range endpoints {
-		var handler http.Handler
-		handler = NewHandlerFunc(endpoint.F, meta)
-		router.
-			Methods(endpoint.Method).
-			Path(endpoint.Path).
-			Name(endpoint.Description).
-			Handler(handler)
+	for _, endpointGroup := range endpoints {
+		for _, endpoint := range endpointGroup {
+			var handler http.Handler
+			handler = NewHandlerFunc(endpoint.F, meta)
+			router.
+				Methods(endpoint.Method).
+				Path(endpoint.Path).
+				Name(endpoint.Description).
+				Handler(handler)
+		}
 	}
 	if meta != nil {
 		var err error
