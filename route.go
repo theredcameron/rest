@@ -19,6 +19,8 @@ type Endpoint struct {
 
 type Endpoints []Endpoint
 
+type Headers map[string]string
+
 type dataWrapper struct {
 	Data interface{} `json:"data"`
 }
@@ -45,12 +47,12 @@ func (this *Router) Start(port string) error {
 
 var store *sqlitestore.SqliteStore
 
-func NewRouter(meta *CookieMeta, endpoints ...Endpoints) (*Router, error) {
+func NewRouter(meta *CookieMeta, globalHeaders Headers, endpoints ...Endpoints) (*Router, error) {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, endpointGroup := range endpoints {
 		for _, endpoint := range endpointGroup {
 			var handler http.Handler
-			handler = NewHandlerFunc(endpoint.F, meta)
+			handler = NewHandlerFunc(endpoint.F, meta, globalHeaders)
 			router.
 				Methods(endpoint.Method).
 				Path(endpoint.Path).
@@ -70,7 +72,7 @@ func NewRouter(meta *CookieMeta, endpoints ...Endpoints) (*Router, error) {
 	}, nil
 }
 
-func NewHandlerFunc(f func(*Request) (interface{}, error), meta *CookieMeta) http.HandlerFunc {
+func NewHandlerFunc(f func(*Request) (interface{}, error), meta *CookieMeta, globalHeaders Headers) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		req, err := NewRequest(r, meta)
 		if err != nil {
@@ -99,6 +101,11 @@ func NewHandlerFunc(f func(*Request) (interface{}, error), meta *CookieMeta) htt
 				return
 			}
 		}
+
+		for key, value := range globalHeaders {
+			w.Header().Set(key, value)
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(data); err != nil {
